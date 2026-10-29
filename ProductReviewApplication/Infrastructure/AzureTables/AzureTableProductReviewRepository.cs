@@ -38,7 +38,7 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
                     TableTransactionActionType.Add,
                     reviewEntity)
     ]);
-;
+            ;
         }
 
         public ProductStateEntity? GetLatestReviewIdOfProduct(string productName)
@@ -47,19 +47,19 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
             return reviews.Any() ? reviews.First() : null;
         }
 
-        public List<ProductReviewEntity> GetReviewsOfProduct(string productName)
+        public async Task<List<ProductReviewEntity>> GetReviewsOfProduct(string productName, int pageSize)
         {
+            var query = tableClient.QueryAsync<ProductReviewEntity>(
+        x => x.PartitionKey == productName
+          && x.RowKey != ProductStateEntity.LatestRowKey,
+        maxPerPage: pageSize);
+
+            await foreach (var page in query.AsPages())
             {
-                var results = new List<ProductReviewEntity>();
-
-                foreach (var entity in tableClient.Query<ProductReviewEntity>(
-                    x => x.PartitionKey == productName && !x.RowKey.Equals(ProductStateEntity.LatestRowKey)))
-                {
-                    results.Add(entity);
-                }
-
-                return results;
+                return page.Values.ToList();
             }
+
+            return new List<ProductReviewEntity>();
         }
 
         public void SaveReview(ProductReview productReview)

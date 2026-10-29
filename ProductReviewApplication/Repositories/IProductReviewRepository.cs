@@ -4,7 +4,7 @@ namespace ProductReviewApplication.Repositories
 {
     public interface IProductReviewRepository
     {
-        List<ProductReviewEntity> GetReviewsOfProduct(String productName);
+        Task<List<ProductReviewEntity>> GetReviewsOfProduct(String productName, int pageSize);
         ProductStateEntity? GetLatestReviewIdOfProduct(String productName);
         void SaveReview(ProductReview productReview);
         public Task SaveReviewAndUpdateLatestAsync(

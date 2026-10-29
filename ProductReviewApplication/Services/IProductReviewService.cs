@@ -4,7 +4,7 @@ namespace ProductReviewApplication.Services
 {
     public interface IProductReviewService
     {
-        List<ProductReview> GetReviewsOfProduct(string name, string userId);
+        Task<List<ProductReview>> GetReviewsOfProduct(string name, string userId, int? pagesize);
         Task CreateReview(string productName, ProductReviewRequest request);
     }
 }
