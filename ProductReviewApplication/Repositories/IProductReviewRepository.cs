@@ -5,7 +5,10 @@ namespace ProductReviewApplication.Repositories
     public interface IProductReviewRepository
     {
         List<ProductReviewEntity> GetReviewsOfProduct(String productName);
-        ProductReviewEntity? GetLatestReviewOfProduct(String productName);
+        ProductStateEntity? GetLatestReviewIdOfProduct(String productName);
         void SaveReview(ProductReview productReview);
+        public Task SaveReviewAndUpdateLatestAsync(
+            ProductReview productReview,
+            ProductStateEntity currentStatus);
     }
 }

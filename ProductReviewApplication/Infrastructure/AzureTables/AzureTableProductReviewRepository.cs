@@ -16,9 +16,32 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
             tableClient = factory.ProductReviewsTable;
         }
 
-        public ProductReviewEntity? GetLatestReviewOfProduct(string productName)
+        public async Task SaveReviewAndUpdateLatestAsync(
+    ProductReview productReview,
+    ProductStateEntity currentStatus)
         {
-            IEnumerable<ProductReviewEntity> reviews = tableClient.Query<ProductReviewEntity>(x => x.PartitionKey == productName);
+            var reviewEntity = ProductReviewMapper.toEntity(productReview);
+
+            var updatedStatus = new ProductStateEntity
+            {
+                PartitionKey = currentStatus.PartitionKey,
+                LatestReviewId = reviewEntity.RowKey
+            };
+            await tableClient.SubmitTransactionAsync([
+                new TableTransactionAction(
+                    TableTransactionActionType.UpsertReplace,
+                    updatedStatus,
+                    currentStatus.ETag),
+                new TableTransactionAction(
+                    TableTransactionActionType.Add,
+                    reviewEntity)
+    ]);
+;
+        }
+
+        public ProductStateEntity? GetLatestReviewIdOfProduct(string productName)
+        {
+            IEnumerable<ProductStateEntity> reviews = tableClient.Query<ProductStateEntity>(x => x.PartitionKey == productName && x.RowKey == "latest");
             return reviews.Any() ? reviews.First() : null;
         }
 
@@ -28,7 +51,7 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
                 var results = new List<ProductReviewEntity>();
 
                 foreach (var entity in tableClient.Query<ProductReviewEntity>(
-                    x => x.PartitionKey == productName))
+                    x => x.PartitionKey == productName && !x.RowKey.Equals(ProductStateEntity.LatestRowKey)))
                 {
                     results.Add(entity);
                 }

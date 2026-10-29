@@ -8,8 +8,10 @@ namespace ProductReviewApplication.Infrastructure.AzureTables.Entities
 
     public class ProductStateEntity : ITableEntity
     {
+
+        public const string LatestRowKey = "latest";
         public string PartitionKey { get; set; } = default!;
-        public string RowKey { get; set; } = "latest";
+        public string RowKey { get; set; } = LatestRowKey;
         public string? LatestReviewId { get; set; }
 
         public DateTimeOffset? Timestamp { get; set; }

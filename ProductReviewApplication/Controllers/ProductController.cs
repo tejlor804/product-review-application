@@ -22,9 +22,9 @@ namespace ProductReviewApplication.Controllers
         }
 
         [HttpPost("{name}/reviews")]
-        public ActionResult<ProductReview> CreateReview(string name, [FromBody] ProductReviewRequest request)
+        public async Task<ActionResult<ProductReview>> CreateReview(string name, [FromBody] ProductReviewRequest request)
         {
-            _productReviewService.CreateReview(name, request);
+            await _productReviewService.CreateReview(name, request);
             return CreatedAtRoute(
                 GetReviewsRoute,
                 new { name, userId = request.UserId },

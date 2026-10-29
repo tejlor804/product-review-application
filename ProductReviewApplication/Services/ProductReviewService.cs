@@ -1,4 +1,5 @@
-﻿using Azure.Core;
+﻿using Azure;
+using Azure.Core;
 using ProductReviewApplication.DTOs;
 using ProductReviewApplication.Exceptions;
 using ProductReviewApplication.Infrastructure.AzureTables.Entities;
@@ -13,17 +14,25 @@ namespace ProductReviewApplication.Services
         IProductReviewRepository productReviewRepository = productReviewRepository;
         IUserRepository userRepository = userRepository;
 
-        public void CreateReview(string productName, ProductReviewRequest request)
+        public async Task CreateReview(string productName, ProductReviewRequest request)
         {
             ProductReviewRequest.Validate(request);
             if (string.IsNullOrWhiteSpace(productName)) throw new ArgumentException("Product name must be defined!");
-            ProductReviewEntity? latestReviewOfProduct = productReviewRepository.GetLatestReviewOfProduct(productName);
+            ProductStateEntity? latestReviewOfProduct = productReviewRepository.GetLatestReviewIdOfProduct(productName);
             String? latestReviewIdSeenByUser = userRepository.GetLatestReadReviewIdOfUser(productName, request.UserId);
-            if (latestReviewOfProduct != null && (latestReviewIdSeenByUser == null || !latestReviewIdSeenByUser.Equals(latestReviewOfProduct.RowKey)))
+            if (latestReviewOfProduct != null && !string.IsNullOrEmpty(latestReviewOfProduct.LatestReviewId) &&
+                (latestReviewIdSeenByUser == null || !latestReviewIdSeenByUser.Equals(latestReviewOfProduct.LatestReviewId)))
             {
                 throw new NewestReviewNotReadException();
             }
-            productReviewRepository.SaveReview(new() { ProductName = productName, UserId = request.UserId, Review = request.Review });
+            try
+            {
+                await productReviewRepository.SaveReviewAndUpdateLatestAsync(new() { ProductName = productName, UserId = request.UserId, Review = request.Review }, latestReviewOfProduct);
+            }
+            catch (RequestFailedException ex) when (ex.Status == 412)
+            {
+                throw new NewestReviewNotReadException();
+            }
         }
 
         public List<ProductReview> GetReviewsOfProduct(string productName, String userId)
@@ -33,7 +42,7 @@ namespace ProductReviewApplication.Services
                 throw new ArgumentException("Request parameters must be provided!");
             }
             List<ProductReviewEntity> reviewsOfProduct = productReviewRepository.GetReviewsOfProduct(productName);
-            if(reviewsOfProduct.Count > 0)
+            if (reviewsOfProduct.Count > 0)
             {
                 userRepository.SaveLatestReadReviewIdOfUser(userId, productName, reviewsOfProduct.First().RowKey);
             }
