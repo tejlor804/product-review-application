@@ -47,19 +47,19 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
             return reviews.Any() ? reviews.First() : null;
         }
 
-        public async Task<List<ProductReviewEntity>> GetReviewsOfProduct(string productName, int pageSize)
+        public async Task<List<ProductReviewEntity>> GetReviewsOfProduct(string productName, int limit)
         {
             var query = tableClient.QueryAsync<ProductReviewEntity>(
         x => x.PartitionKey == productName
           && x.RowKey != ProductStateEntity.LatestRowKey,
-        maxPerPage: pageSize);
+        maxPerPage: limit);
 
             await foreach (var page in query.AsPages())
             {
-                return page.Values.ToList();
+                return [.. page.Values];
             }
 
-            return new List<ProductReviewEntity>();
+            return [];
         }
 
         public void SaveReview(ProductReview productReview)

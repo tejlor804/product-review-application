@@ -11,7 +11,7 @@ namespace ProductReviewApplication.Services
 {
     public class ProductReviewService(IProductReviewRepository productReviewRepository, IUserRepository userRepository) : IProductReviewService
     {
-        private const int MaxPageSize = 100;
+        private const int MaxLimit = 100;
         IProductReviewRepository productReviewRepository = productReviewRepository;
         IUserRepository userRepository = userRepository;
 
@@ -36,13 +36,14 @@ namespace ProductReviewApplication.Services
             }
         }
 
-        public async Task<List<ProductReview>> GetReviewsOfProduct(string productName, String userId, int? pageSize)
+        public async Task<List<ProductReview>> GetReviewsOfProduct(string productName, String userId, int? limit)
         {
             if (string.IsNullOrWhiteSpace(productName) || string.IsNullOrWhiteSpace(userId))
             {
                 throw new ArgumentException("Request parameters must be provided!");
             }
-            List<ProductReviewEntity> reviewsOfProduct = await productReviewRepository.GetReviewsOfProduct(productName, pageSize ?? MaxPageSize);
+            int pageSize = int.Min(limit ?? MaxLimit, MaxLimit);
+            List<ProductReviewEntity> reviewsOfProduct = await productReviewRepository.GetReviewsOfProduct(productName, pageSize);
             if (reviewsOfProduct.Count > 0)
             {
                 userRepository.SaveLatestReadReviewIdOfUser(userId, productName, reviewsOfProduct.First().RowKey);

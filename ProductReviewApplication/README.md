@@ -37,8 +37,9 @@ easier to replace or test persistence components.
    /Product/{name}/reviews?userId={userId}`.
 2. If reviews exist, the application records the newest review as the latest one
    read by that user for that product.
-3. When the user submits a review, the service compares the latest stored review
-   with the user's recorded read state.
+3. When the user submits a review, the service compares the product's current state 
+   which includes the latest review. Concurrency is handled with optimistic concurrency
+   using the ETag of the product state entity.
 4. If the user has not read the newest review, the API returns `428 Precondition
    Required`.
 5. Otherwise, the new review is saved.
@@ -47,18 +48,18 @@ easier to replace or test persistence components.
 
 ### Get reviews
 
-`GET /Product/{name}/reviews?userId={userId}`
+`GET /Product/{name}/reviews?userId={userId}&limit={limit}`
 
 Example:
 
 ``` http
-GET http://localhost:5287/Product/Keyboard/reviews?userId=user-123
+GET http://localhost:5287/Product/Keyboard/reviews?userId=user-123&limit=10
 Accept: application/json
 ```
 
 Returns the reviews for the specified product and records the newest review as
 read for the given user when reviews exist. If there are no reviews of the
-product, an empty list is returned.
+product, an empty list is returned.	A `limit` query parameter can be provided to limit the number of reviews returned. The maximum limit is 100.
 
 ### Submit a review
 
@@ -120,14 +121,9 @@ The endpoints are exposed at `http://localhost:5287`.
 
 The following issues should be addressed before production use:
 
-- **Concurrency:** reading the latest review, recording read state, and
-  submitting a new review are separate operations. Concurrent requests can
-  change state between the check and save. Concurrency must be handled if strict
-  consistency is required.
 - **Authentication:** `userId` is supplied by the client, and
   authentication/authorization is not implemented. In production, derive the
   user identity from a trusted authentication context.
-- **Pagination:** consider pagination if a product can have many reviews.
 - **Observability:** add structured logging, metrics, health checks, tracing,
   and alerts.
 - **Testing:** add unit tests for the business rule and integration tests for

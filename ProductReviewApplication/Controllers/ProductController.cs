@@ -16,9 +16,9 @@ namespace ProductReviewApplication.Controllers
         private readonly IProductReviewService _productReviewService = productReviewService;
 
         [HttpGet("{name}/reviews", Name = GetReviewsRoute)]
-        public async Task<List<ProductReview>> GetReviews(string name, [FromQuery] string userId, [FromQuery] int? pageSize)
+        public async Task<List<ProductReview>> GetReviews(string name, [FromQuery] string userId, [FromQuery] int? limit)
         {
-            return await _productReviewService.GetReviewsOfProduct(name, userId, pageSize);
+            return await _productReviewService.GetReviewsOfProduct(name, userId, limit);
         }
 
         [HttpPost("{name}/reviews")]
