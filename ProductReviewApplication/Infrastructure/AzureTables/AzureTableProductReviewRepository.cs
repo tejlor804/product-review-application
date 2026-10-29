@@ -1,4 +1,5 @@
-﻿using Azure.Data.Tables;
+﻿using Azure;
+using Azure.Data.Tables;
 using ProductReviewApplication.Infrastructure.AzureTables.Entities;
 using ProductReviewApplication.Mapping;
 using ProductReviewApplication.Repositories;
@@ -21,17 +22,18 @@ namespace ProductReviewApplication.Infrastructure.AzureTables
     ProductStateEntity currentStatus)
         {
             var reviewEntity = ProductReviewMapper.toEntity(productReview);
-
             var updatedStatus = new ProductStateEntity
             {
-                PartitionKey = currentStatus.PartitionKey,
+                PartitionKey = reviewEntity.PartitionKey,
                 LatestReviewId = reviewEntity.RowKey
             };
             await tableClient.SubmitTransactionAsync([
-                new TableTransactionAction(
-                    TableTransactionActionType.UpsertReplace,
-                    updatedStatus,
-                    currentStatus.ETag),
+                new(
+            currentStatus is null
+                ? TableTransactionActionType.Add
+                : TableTransactionActionType.UpdateReplace,
+            updatedStatus,
+            currentStatus?.ETag ?? ETag.All),
                 new TableTransactionAction(
                     TableTransactionActionType.Add,
                     reviewEntity)
